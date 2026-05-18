@@ -1,6 +1,8 @@
-# minicar
+# Wren
 
-Top-down 2D arcade racer in Godot 4.6, in the spirit of *Super Cars* / *Super Sprint*. Built as a learning project — small steps, lots of comments.
+> Top-down 2D arcade racer in Godot 4.6, in the spirit of *Super Cars* / *Super Sprint*. Built as a learning project — small steps, lots of comments.
+
+*"Wren" is a codename. The project may pick up a final name later.*
 
 ## Handling — hybrid physics
 
