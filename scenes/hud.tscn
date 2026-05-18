@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://bpans64dgjfxb"]
+
+[ext_resource type="Script" uid="uid://bpwph74fvq71c" path="res://scripts/hud.gd" id="1_ahhtf"]
+
+[node name="Hud" type="CanvasLayer" unique_id=1625979672]
+script = ExtResource("1_ahhtf")
+
+[node name="SpeedLabel" type="Label" parent="." unique_id=2014987150]
+anchors_preset = -1
+offset_left = 30.0
+offset_bottom = 75.0
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DebugPanel" type="PanelContainer" parent="." unique_id=458883458]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_bottom = 130.0
+grow_horizontal = 0
+
+[node name="Lines" type="VBoxContainer" parent="DebugPanel" unique_id=1524056379]
+layout_mode = 2
+
+[node name="Speed" type="Label" parent="DebugPanel/Lines" unique_id=1807739602]
+layout_mode = 2
+text = "Speed: 0"
+
+[node name="Forward" type="Label" parent="DebugPanel/Lines" unique_id=204273654]
+layout_mode = 2
+text = "Forward: 0"
+
+[node name="Lateral" type="Label" parent="DebugPanel/Lines" unique_id=560903986]
+layout_mode = 2
+text = "Lateral: 0"
+
+[node name="Grip" type="Label" parent="DebugPanel/Lines" unique_id=1600304783]
+layout_mode = 2
+text = "Grip: 0"
+
+[node name="Drag" type="Label" parent="DebugPanel/Lines" unique_id=1757331673]
+layout_mode = 2
+text = "Drag: 0"
+
+[node name="Surfaces" type="Label" parent="DebugPanel/Lines" unique_id=1571049290]
+layout_mode = 2
+text = "Surfaces: 0"

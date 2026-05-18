@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://bdmdclranf8ol"]
+
+[ext_resource type="Script" uid="uid://kj45momsqul" path="res://scripts/surface.gd" id="1_exuij"]
+
+[node name="Surface" type="Area2D" unique_id=2095880722]
+script = ExtResource("1_exuij")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1045653085]
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=33182474]
+offset_right = 40.0
+offset_bottom = 40.0
+color = Color(0.34907785, 0.99999994, 0.9479223, 0.5254902)
