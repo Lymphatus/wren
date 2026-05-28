@@ -1,40 +1,55 @@
 [gd_scene format=3 uid="uid://cv8y3ux4j4wid"]
 
-[ext_resource type="PackedScene" path="res://scenes/car.tscn" id="1_car"]
+[ext_resource type="PackedScene" uid="uid://bnygbna460fmm" path="res://scenes/car.tscn" id="1_car"]
+[ext_resource type="Script" uid="uid://cn7s34k44kd4x" path="res://scripts/follow_camera.gd" id="1_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://c4tem3eykvcnt" path="res://scenes/wall.tscn" id="2_0wfyh"]
 [ext_resource type="PackedScene" uid="uid://bdmdclranf8ol" path="res://scenes/surface.tscn" id="3_sugp2"]
 [ext_resource type="PackedScene" uid="uid://bpans64dgjfxb" path="res://scenes/hud.tscn" id="4_jyhfs"]
+[ext_resource type="Script" uid="uid://du6pjc4cl4vny" path="res://scripts/game_manager.gd" id="6_tefeu"]
+[ext_resource type="PackedScene" uid="uid://dqe68kpb3jv22" path="res://scenes/checkpoint.tscn" id="7_o6xl0"]
+[ext_resource type="Script" uid="uid://dtghngh0khaj4" path="res://scripts/checkpoint.gd" id="8_tipki"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_tbgi4"]
+size = Vector2(20, 300)
 
 [node name="Main" type="Node2D" unique_id=1754942275]
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=160616574]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=160616574 node_paths=PackedStringArray("target")]
+limit_left = -1152
+limit_top = -648
+limit_right = 1152
+limit_bottom = 648
+limit_smoothed = true
+script = ExtResource("1_tbgi4")
+target = NodePath("../Car")
 
 [node name="Car" parent="." unique_id=1135465443 instance=ExtResource("1_car")]
 z_index = 1
+position = Vector2(-156, 0)
 gravity_scale = 0.0
-linear_damp = 2.0
+linear_damp = 1.5
+skid_threshold_pct = 0.6
 
 [node name="Walls" type="Node2D" parent="." unique_id=1034369856]
 
 [node name="WallTop" parent="Walls" unique_id=1866550398 instance=ExtResource("2_0wfyh")]
-position = Vector2(0, -314)
-size = Vector2(1152, 20)
+position = Vector2(0, -638)
+size = Vector2(2304, 20)
 
 [node name="WallBottom" parent="Walls" unique_id=1215842488 instance=ExtResource("2_0wfyh")]
-position = Vector2(0, 314)
-size = Vector2(1152, 20)
+position = Vector2(0, 638)
+size = Vector2(2304, 20)
 
 [node name="WallLeft" parent="Walls" unique_id=638005412 instance=ExtResource("2_0wfyh")]
-position = Vector2(-566, 0)
-size = Vector2(20, 608)
+position = Vector2(-1142, 0)
+size = Vector2(20, 1256)
 
 [node name="WallRight" parent="Walls" unique_id=953155926 instance=ExtResource("2_0wfyh")]
-position = Vector2(566, 0)
-size = Vector2(20, 608)
+position = Vector2(1142, 0)
+size = Vector2(20, 1256)
 
 [node name="Ice" parent="." unique_id=2095880722 instance=ExtResource("3_sugp2")]
 position = Vector2(333, 0)
-grip = 0.1
 
 [node name="Grass" parent="." unique_id=344086964 instance=ExtResource("3_sugp2")]
 position = Vector2(-306, -24)
@@ -42,5 +57,39 @@ color = Color(6.160736e-06, 0.69932425, 0.26499885, 1)
 grip = 0.5
 drag = 2.0
 
-[node name="Hud" parent="." unique_id=1625979672 node_paths=PackedStringArray("car") instance=ExtResource("4_jyhfs")]
+[node name="Hud" parent="." unique_id=1625979672 node_paths=PackedStringArray("car", "game_manager") instance=ExtResource("4_jyhfs")]
 car = NodePath("../Car")
+game_manager = NodePath("../GameManager")
+
+[node name="GameManager" type="Node" parent="." unique_id=44021279 node_paths=PackedStringArray("start_line", "checkpoints_container")]
+script = ExtResource("6_tefeu")
+start_line = NodePath("../StartFinishLine")
+checkpoints_container = NodePath("../Checkpoints")
+
+[node name="StartFinishLine" type="Area2D" parent="." unique_id=1602827363]
+position = Vector2(67, -425)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StartFinishLine" unique_id=2037957974]
+shape = SubResource("RectangleShape2D_tbgi4")
+
+[node name="ColorRect" type="ColorRect" parent="StartFinishLine" unique_id=335999016]
+offset_left = -10.0
+offset_top = -150.0
+offset_right = 10.0
+offset_bottom = 150.0
+color = Color(1, 0, 0, 0.5)
+metadata/_edit_use_anchors_ = true
+
+[node name="Checkpoints" type="Node2D" parent="." unique_id=54335833]
+
+[node name="Checkpoint1" parent="Checkpoints" unique_id=730939196 instance=ExtResource("7_o6xl0")]
+position = Vector2(847, -238)
+script = ExtResource("8_tipki")
+
+[node name="Checkpoint2" parent="Checkpoints" unique_id=246847440 instance=ExtResource("7_o6xl0")]
+position = Vector2(114, 0)
+script = ExtResource("8_tipki")
+
+[node name="Checkpoint3" parent="Checkpoints" unique_id=1273690622 instance=ExtResource("7_o6xl0")]
+position = Vector2(-573, 306)
+script = ExtResource("8_tipki")

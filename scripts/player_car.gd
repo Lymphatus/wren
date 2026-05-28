@@ -12,10 +12,12 @@ extends RigidBody2D
 #   1. Throttle — add forward thrust based on input.
 #   2. Surface effects — smooth-lerp effective_grip / effective_drag toward
 #      values implied by the surfaces we're currently overlapping.
-#   3. Friction — split velocity into forward/lateral, slow forward by drag,
+#   3. Skid marks — sample pre-friction lateral velocity to toggle tire
+#      particle emission.
+#   4. Friction — split velocity into forward/lateral, slow forward by drag,
 #      kill some lateral by grip, recombine.
-#   4. Speed clamp — enforce max_speed.
-#   5. Steering — set angular velocity, scaled by current speed.
+#   5. Speed clamp — enforce max_speed.
+#   6. Steering — set angular velocity, scaled by current speed.
 # ============================================================================
 
 
@@ -42,6 +44,10 @@ extends RigidBody2D
 ## Baseline lateral friction. 1.0 = on rails, 0.0 = pure ice.
 ## Surfaces under the car can lower this; the lowest value wins.
 @export_range(0.0, 1.0, 0.05) var grip: float = 0.9
+## Fraction of normal grip retained at max_speed. 1.0 = no drift effect.
+## Lower values mean more oversteer/drift at high speed. 0.3 = pronounced.
+## Multiplies with effective_grip, so slippery surfaces stay slipperier.
+@export_range(0.0, 1.0, 0.05) var high_speed_grip_floor: float = 0.3
 
 
 # --- Surface transition smoothing -------------------------------------------
@@ -56,6 +62,20 @@ extends RigidBody2D
 @export var drag_gain_speed: float = 15.0
 ## How fast effective_drag falls back to 0 (leaving mud).
 @export var drag_release_speed: float = 5.0
+
+# --- Skid marks -------------------------------------------------------------
+@export_group("Skid marks")
+## Tire-slip cutoff, expressed as a fraction of the lateral velocity a
+## max-speed max-steering turn would build per physics tick (ignoring grip).
+## Independent of surface, so slippery surfaces still mark easily — they
+## naturally exceed the baseline. 0.75 ≈ the old absolute value of 15.
+@export_range(0.0, 1.0, 0.05) var skid_threshold_pct: float = 0.75
+## Local offset of the left rear tire from the car's center. The right tire
+## mirrors this on the Y axis. Negative X = behind center.
+@export var rear_tire_offset: Vector2 = Vector2(-15, 8)
+
+@onready var skid_particles_left: CPUParticles2D = $SkidParticlesLeft
+@onready var skid_particles_right: CPUParticles2D = $SkidParticlesRight
 
 
 # --- Runtime state ----------------------------------------------------------
@@ -72,6 +92,10 @@ var effective_grip: float = 0.9
 ## Smoothed drag value used in the physics math. Lerps toward
 ## _get_target_drag(); defaults to 0 (no drag on asphalt).
 var effective_drag: float = 0.0
+
+## Per-frame grip actually used in lateral-friction math, after speed
+## modulation. Exposed for the debug HUD; do not write to it externally.
+var final_grip: float = 0.9
 
 
 func _ready() -> void:
@@ -98,10 +122,10 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 
 	_apply_throttle(state, throttle, forward)
 	_update_surface_effects(state.step)
+	_update_skid_marks(state, right)
 	_apply_friction(state, forward, right)
 	_clamp_speed(state)
 	_apply_steering(state, steer)
-
 
 # --- Step 1: throttle -------------------------------------------------------
 # Add (or subtract, when braking) velocity along the forward direction.
@@ -127,7 +151,7 @@ func _update_surface_effects(dt: float) -> void:
 	effective_drag = lerpf(effective_drag, target_drag, drag_rate * dt)
 
 
-# --- Step 3: friction -------------------------------------------------------
+# --- Step 3: friction ----------------------------------------------
 # Project velocity onto the forward and right axes, manipulate each
 # independently, recombine.
 #
@@ -135,14 +159,23 @@ func _update_surface_effects(dt: float) -> void:
 #   lateral_vel: how fast we're sliding sideways.
 #
 # Drag is a continuous-time rate (uses dt) applied to forward_vel.
-# Grip is a per-frame fraction applied to lateral_vel — at 60 Hz this means
-# "kill this fraction of sideways motion, 60 times per second".
+#
+# Grip starts from effective_grip (set by surfaces) and is reduced as speed
+# approaches max_speed, via a quadratic curve toward high_speed_grip_floor.
+# The result, final_grip, is the per-frame fraction of lateral motion killed.
 func _apply_friction(state: PhysicsDirectBodyState2D, forward: Vector2, right: Vector2) -> void:
 	var forward_vel := forward * state.linear_velocity.dot(forward)
 	var lateral_vel := right * state.linear_velocity.dot(right)
 
+	# Speed-dependent grip loss. Eased (quadratic) curve so low-mid speeds
+	# stay planted; grip only really falls off as we approach max_speed.
+	# Multiplies with effective_grip — slippery surfaces still feel slippery.
+	var speed_factor := clampf(state.linear_velocity.length() / max_speed, 0.0, 1.0)
+	var eased := speed_factor * speed_factor
+	final_grip = lerpf(effective_grip, effective_grip * high_speed_grip_floor, eased)
+
 	forward_vel *= (1.0 - effective_drag * state.step)
-	state.linear_velocity = forward_vel + lateral_vel * (1.0 - effective_grip)
+	state.linear_velocity = forward_vel + lateral_vel * (1.0 - final_grip)
 
 
 # --- Step 4: speed clamp ----------------------------------------------------
@@ -164,7 +197,30 @@ func _apply_steering(state: PhysicsDirectBodyState2D, steer: float) -> void:
 	var speed_factor := clampf(state.linear_velocity.length() / full_steer_speed, 0.0, 1.0)
 	state.angular_velocity = steer * steering_speed * speed_factor
 
+# --- Step 6: skid marks -----------------------------------------------------
+# Toggle particle emission based on lateral slip. Particles have
+# local_coords = false, so they're anchored in world space where the tire was
+# at emission time — they don't drag along with the car. Lifetime, fade, and
+# count cap are all configured on the nodes themselves; no per-frame
+# bookkeeping needed here.
+#
+# Measured BEFORE _apply_friction kills the lateral component, otherwise the
+# post-friction value (~10% of the real slip on grip=0.9) never trips.
+#
+# Baseline is the max lateral velocity a max-speed max-steering turn would
+# build at the *worst-case drift effect* on a perfect-grip surface. Dividing
+# by high_speed_grip_floor (not by current grip) keeps the threshold
+# absolute in px/s — slippery surfaces still naturally exceed it (which is
+# what makes them skid easily), but the baseline grows to include the
+# expansion drift causes on otherwise-grippy surfaces. maxf guards
+# against divide-by-zero on extreme tuning.
+func _update_skid_marks(state: PhysicsDirectBodyState2D, right: Vector2) -> void:
+	var lateral_speed := absf(state.linear_velocity.dot(right))
+	var max_lateral_baseline := max_speed * steering_speed * state.step / maxf(high_speed_grip_floor, 0.01)
+	var skidding := lateral_speed >= skid_threshold_pct * max_lateral_baseline
 
+	skid_particles_left.emitting = skidding
+	skid_particles_right.emitting = skidding
 # ============================================================================
 # Surface tracking
 #

@@ -7,6 +7,8 @@ extends CanvasLayer
 
 ## The player car. Drag the Car node into this slot in the Inspector.
 @export var car: RigidBody2D
+## The game state owner. Drag the GameManager node into this slot.
+@export var game_manager: Node
 
 # Always-visible.
 @onready var speed_label: Label = $SpeedLabel
@@ -18,8 +20,14 @@ extends CanvasLayer
 @onready var debug_forward: Label = $DebugPanel/Lines/Forward
 @onready var debug_lateral: Label = $DebugPanel/Lines/Lateral
 @onready var debug_grip: Label = $DebugPanel/Lines/Grip
+@onready var debug_final_grip: Label = $DebugPanel/Lines/FinalGrip
 @onready var debug_drag: Label = $DebugPanel/Lines/Drag
 @onready var debug_surfaces: Label = $DebugPanel/Lines/Surfaces
+
+@onready var lap_label: Label = $LapPanel/Lines/LapLabel
+@onready var lap_time_label: Label = $LapPanel/Lines/LapTimeLabel
+@onready var time_label: Label = $LapPanel/Lines/TimeLabel
+@onready var best_label: Label = $LapPanel/Lines/BestLabel
 
 
 func _process(_delta: float) -> void:
@@ -29,6 +37,12 @@ func _process(_delta: float) -> void:
 	# Always-visible: cosmetic km/h reading.
 	var speed := car.linear_velocity.length()
 	speed_label.text = "Speed: %.0f km/h" % (speed / 2.0)
+
+	if game_manager:
+		lap_label.text = "Lap: %d" % game_manager.lap_count
+		lap_time_label.text = "Lap: " + game_manager.format_time(game_manager.current_lap_time)
+		time_label.text = "Time: " + game_manager.format_time(game_manager.total_time)
+		best_label.text = "Best: " + game_manager.format_time(game_manager.best_lap_time)
 
 	# Skip the rest if the debug panel is hidden — no point updating
 	# labels nobody can see.
@@ -52,6 +66,7 @@ func _update_debug() -> void:
 	debug_lateral.text   = "lateral:  %6.1f" % lateral_speed
 	debug_grip.text      = "grip:      %5.2f" % car.effective_grip
 	debug_drag.text      = "drag:      %5.2f" % car.effective_drag
+	debug_final_grip.text = "final:     %5.2f" % car.final_grip
 	debug_surfaces.text  = "surfaces:    %d"  % car.current_surfaces.size()
 
 

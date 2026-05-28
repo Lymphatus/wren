@@ -2,14 +2,18 @@
 
 [ext_resource type="Script" uid="uid://disp21axslu68" path="res://scripts/wall.gd" id="1_wykyb"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_o5qli"]
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_wykyb"]
+bounce = 0.7
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_2ktk7"]
 size = Vector2(20, 200)
 
 [node name="Wall" type="StaticBody2D" unique_id=1866550398]
+physics_material_override = SubResource("PhysicsMaterial_wykyb")
 script = ExtResource("1_wykyb")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1363132046]
-shape = SubResource("RectangleShape2D_o5qli")
+shape = SubResource("RectangleShape2D_2ktk7")
 
 [node name="ColorRect" type="ColorRect" parent="." unique_id=644156354]
 offset_left = -10.0

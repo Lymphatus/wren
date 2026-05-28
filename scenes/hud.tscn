@@ -41,6 +41,10 @@ text = "Lateral: 0"
 layout_mode = 2
 text = "Grip: 0"
 
+[node name="FinalGrip" type="Label" parent="DebugPanel/Lines" unique_id=270981585]
+layout_mode = 2
+text = "Final Grip: 0"
+
 [node name="Drag" type="Label" parent="DebugPanel/Lines" unique_id=1757331673]
 layout_mode = 2
 text = "Drag: 0"
@@ -48,3 +52,31 @@ text = "Drag: 0"
 [node name="Surfaces" type="Label" parent="DebugPanel/Lines" unique_id=1571049290]
 layout_mode = 2
 text = "Surfaces: 0"
+
+[node name="LapPanel" type="PanelContainer" parent="." unique_id=2015743885]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="Lines" type="VBoxContainer" parent="LapPanel" unique_id=711904767]
+layout_mode = 2
+
+[node name="LapLabel" type="Label" parent="LapPanel/Lines" unique_id=529726948]
+layout_mode = 2
+text = "Lap #: 0"
+
+[node name="LapTimeLabel" type="Label" parent="LapPanel/Lines" unique_id=1959901124]
+layout_mode = 2
+text = "Lap: 0:00.000"
+
+[node name="TimeLabel" type="Label" parent="LapPanel/Lines" unique_id=1320036418]
+layout_mode = 2
+text = "Time: 0:00.000"
+
+[node name="BestLabel" type="Label" parent="LapPanel/Lines" unique_id=866991332]
+layout_mode = 2
+text = "Best: --:--.---"
