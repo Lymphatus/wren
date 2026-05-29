@@ -7,7 +7,6 @@
 [ext_resource type="PackedScene" uid="uid://bpans64dgjfxb" path="res://scenes/hud.tscn" id="4_jyhfs"]
 [ext_resource type="Script" uid="uid://du6pjc4cl4vny" path="res://scripts/game_manager.gd" id="6_tefeu"]
 [ext_resource type="PackedScene" uid="uid://dqe68kpb3jv22" path="res://scenes/checkpoint.tscn" id="7_o6xl0"]
-[ext_resource type="Script" uid="uid://dtghngh0khaj4" path="res://scripts/checkpoint.gd" id="8_tipki"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_tbgi4"]
 size = Vector2(20, 300)
@@ -61,10 +60,11 @@ drag = 2.0
 car = NodePath("../Car")
 game_manager = NodePath("../GameManager")
 
-[node name="GameManager" type="Node" parent="." unique_id=44021279 node_paths=PackedStringArray("start_line", "checkpoints_container")]
+[node name="GameManager" type="Node" parent="." unique_id=44021279 node_paths=PackedStringArray("start_line", "checkpoints_container", "spawn_marker")]
 script = ExtResource("6_tefeu")
 start_line = NodePath("../StartFinishLine")
 checkpoints_container = NodePath("../Checkpoints")
+spawn_marker = NodePath("../StartFinishLine/CarStartMarker")
 
 [node name="StartFinishLine" type="Area2D" parent="." unique_id=1602827363]
 position = Vector2(67, -425)
@@ -80,16 +80,16 @@ offset_bottom = 150.0
 color = Color(1, 0, 0, 0.5)
 metadata/_edit_use_anchors_ = true
 
+[node name="CarStartMarker" type="Marker2D" parent="StartFinishLine" unique_id=1651490979]
+position = Vector2(-40, 0)
+
 [node name="Checkpoints" type="Node2D" parent="." unique_id=54335833]
 
 [node name="Checkpoint1" parent="Checkpoints" unique_id=730939196 instance=ExtResource("7_o6xl0")]
 position = Vector2(847, -238)
-script = ExtResource("8_tipki")
 
 [node name="Checkpoint2" parent="Checkpoints" unique_id=246847440 instance=ExtResource("7_o6xl0")]
 position = Vector2(114, 0)
-script = ExtResource("8_tipki")
 
 [node name="Checkpoint3" parent="Checkpoints" unique_id=1273690622 instance=ExtResource("7_o6xl0")]
 position = Vector2(-573, 306)
-script = ExtResource("8_tipki")

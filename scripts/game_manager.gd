@@ -31,29 +31,36 @@ var best_lap_time: float = -1.0
 ## StartFinishLine node into this slot in the Inspector.
 @export var start_line: Area2D
 
-
 ## Container holding all Checkpoint instances. Order in the scene tree
 ## determines the order they must be crossed in for a valid lap.
 @export var checkpoints_container: Node2D
+
+## Marker for where the car spawns/resets to — placed behind the start line.
+## Drag the spawn Marker2D into this slot in the Inspector.
+@export var spawn_marker: Marker2D
+
 # Built in _ready from checkpoints_container's children; never mutated after.
 var _checkpoints: Array[Area2D] = []
 # Index of the next checkpoint that must be crossed for the current lap to
 # remain valid. Starts at 0, advances on each in-order crossing, resets to
 # 0 after a valid start-line crossing.
 var _next_required_checkpoint: int = 0
+
 func _ready() -> void:
+	EventBus.race_reset.connect(_reset)
 	if start_line:
 		start_line.body_entered.connect(on_line_crossed)
+		
 	if checkpoints_container:
 		for child in checkpoints_container.get_children():
 			if child.has_signal("crossed"):
 				_checkpoints.append(child)
 				child.crossed.connect(_on_checkpoint_crossed)
-
+	EventBus.race_reset.emit(spawn_marker.global_transform)
+	
 func _process(delta: float) -> void:
 	current_lap_time += delta
 	total_time += delta
-
 
 # ============================================================================
 # Called by the start/finish line's body_entered signal. No direction
@@ -84,6 +91,23 @@ func _on_checkpoint_crossed(checkpoint: Area2D) -> void:
 	if idx == _next_required_checkpoint:
 		_next_required_checkpoint += 1
 
+func _reset(_spawn_transform: Transform2D) -> void:
+	lap_count = 0
+	current_lap_time = 0.0
+	total_time = 0.0
+	best_lap_time = -1.0
+	_next_required_checkpoint = 0
+
+# ============================================================================
+# Input handling — _unhandled_input fires only when a UI element didn't
+# consume the event, which is exactly what we want for a global debug
+# toggle. is_action_pressed (on the event, not the polled version) fires
+# once per key press.
+# ============================================================================
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("reset"):
+		EventBus.race_reset.emit(spawn_marker.global_transform)
+		
 # ============================================================================
 # Format a duration (seconds) as "m:ss.mmm". Negative input → placeholder,
 # so callers can pass best_lap_time directly without a null check.

@@ -97,8 +97,14 @@ var effective_drag: float = 0.0
 ## modulation. Exposed for the debug HUD; do not write to it externally.
 var final_grip: float = 0.9
 
+## Pending reset. _on_race_reset can fire any time; the actual move is
+## deferred to the next _integrate_forces — the only place a RigidBody2D
+## can be repositioned without fighting the solver.
+var _reset_requested: bool = false
+var _reset_to: Transform2D
 
 func _ready() -> void:
+	EventBus.race_reset.connect(_on_race_reset)
 	# Start the smoothed grip on the baseline so the first physics tick
 	# doesn't lerp from a stale default. effective_drag stays at 0 since
 	# the asphalt baseline has no drag.
@@ -110,6 +116,13 @@ func _ready() -> void:
 # one thing; this function is just the order.
 # ============================================================================
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
+	if _reset_requested:
+		_reset_requested = false
+		state.transform = _reset_to
+		state.linear_velocity = Vector2.ZERO
+		state.angular_velocity = 0.0
+		return  # skip this tick's throttle/steering so we don't re-add motion
+		
 	var throttle := Input.get_axis("brake", "gas")
 	var steer := Input.get_axis("steer_left", "steer_right")
 
@@ -236,6 +249,9 @@ func _on_surface_entered(surface: Area2D) -> void:
 func _on_surface_exited(surface: Area2D) -> void:
 	current_surfaces.erase(surface)
 
+func _on_race_reset(spawn_transform: Transform2D) -> void:
+	_reset_to = spawn_transform
+	_reset_requested = true
 
 # Lowest grip across all current surfaces, or the car's baseline if none.
 # "Most slippery wins" — a sliver of ice under a tire skids you regardless
