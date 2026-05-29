@@ -26,7 +26,10 @@ target = NodePath("../Car")
 z_index = 1
 position = Vector2(-156, 0)
 gravity_scale = 0.0
-linear_damp = 1.5
+linear_damp = 1.7
+acceleration = 700.0
+steering_speed = 2.0
+steering_full_speed_factor = 0.5
 skid_threshold_pct = 0.6
 
 [node name="Walls" type="Node2D" parent="." unique_id=1034369856]
@@ -86,10 +89,10 @@ position = Vector2(-40, 0)
 [node name="Checkpoints" type="Node2D" parent="." unique_id=54335833]
 
 [node name="Checkpoint1" parent="Checkpoints" unique_id=730939196 instance=ExtResource("7_o6xl0")]
-position = Vector2(847, -238)
+position = Vector2(364, -344)
 
 [node name="Checkpoint2" parent="Checkpoints" unique_id=246847440 instance=ExtResource("7_o6xl0")]
-position = Vector2(114, 0)
+position = Vector2(-60, 131)
 
 [node name="Checkpoint3" parent="Checkpoints" unique_id=1273690622 instance=ExtResource("7_o6xl0")]
-position = Vector2(-573, 306)
+position = Vector2(-500, -194)

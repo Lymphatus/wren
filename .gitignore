@@ -1,6 +1,8 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+# Editor save-temp files (e.g. scenes/foo.tscn<digits>.tmp)
+*.tmp
 
 # IDE
 .vscode/

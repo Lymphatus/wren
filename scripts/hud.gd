@@ -29,6 +29,10 @@ extends CanvasLayer
 @onready var time_label: Label = $LapPanel/Lines/TimeLabel
 @onready var best_label: Label = $LapPanel/Lines/BestLabel
 
+@onready var countdown_timer_label: Label = $Countdown
+
+func _ready() -> void:
+	EventBus.race_started.connect(_on_race_started)
 
 func _process(_delta: float) -> void:
 	if not car:
@@ -43,6 +47,9 @@ func _process(_delta: float) -> void:
 		lap_time_label.text = "Lap: " + game_manager.format_time(game_manager.current_lap_time)
 		time_label.text = "Time: " + game_manager.format_time(game_manager.total_time)
 		best_label.text = "Best: " + game_manager.format_time(game_manager.best_lap_time)
+		
+		if game_manager.countdown_remaining > 0:
+			countdown_timer_label.text = "%d" % ceili(game_manager.countdown_remaining)
 
 	# Skip the rest if the debug panel is hidden — no point updating
 	# labels nobody can see.
@@ -79,3 +86,10 @@ func _update_debug() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_debug"):
 		debug_panel.visible = not debug_panel.visible
+		
+func _on_race_started() -> void:
+	countdown_timer_label.text = "START!"
+	get_tree().create_timer(1.0).timeout.connect(_clear_countdown_label)
+
+func _clear_countdown_label() -> void:
+	countdown_timer_label.text = ""

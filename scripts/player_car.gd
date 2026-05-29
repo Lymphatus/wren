@@ -21,13 +21,17 @@ extends RigidBody2D
 # ============================================================================
 
 
-# --- Engine -----------------------------------------------------------------
 @export_group("Engine")
 ## How quickly the car gains forward speed when accelerating. Pixels/sec².
 @export var acceleration: float = 800.0
 ## Hard cap on total speed. Pixels/sec.
 @export var max_speed: float = 400.0
-
+## Braking force while rolling forward, as a fraction of acceleration.
+## Lower = gentler, longer stops.
+@export_range(0.0, 1.0, 0.05) var brake_factor: float = 0.2
+## Acceleration when reversing, as a fraction of acceleration. Separate from
+## brake_factor so reverse can be tuned independently of braking.
+@export_range(0.0, 1.0, 0.05) var reverse_factor: float = 0.3
 
 # --- Steering ---------------------------------------------------------------
 @export_group("Steering")
@@ -103,8 +107,18 @@ var final_grip: float = 0.9
 var _reset_requested: bool = false
 var _reset_to: Transform2D
 
+## True while the post-reset countdown is running. Set on race_reset,
+## cleared on race_started. While true, _integrate_forces freezes the car.
+var _controls_locked: bool = false
+
+## Blocks roll-into-reverse: set true while braking from forward motion, so
+## holding the brake past a full stop just keeps the car still. Cleared when
+## the brake is released, so a fresh brake press from a standstill reverses.
+var _reverse_locked: bool = false
+
 func _ready() -> void:
 	EventBus.race_reset.connect(_on_race_reset)
+	EventBus.race_started.connect(_on_race_started)
 	# Start the smoothed grip on the baseline so the first physics tick
 	# doesn't lerp from a stale default. effective_drag stays at 0 since
 	# the asphalt baseline has no drag.
@@ -119,9 +133,11 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if _reset_requested:
 		_reset_requested = false
 		state.transform = _reset_to
+
+	if _controls_locked:
 		state.linear_velocity = Vector2.ZERO
 		state.angular_velocity = 0.0
-		return  # skip this tick's throttle/steering so we don't re-add motion
+		return
 		
 	var throttle := Input.get_axis("brake", "gas")
 	var steer := Input.get_axis("steer_left", "steer_right")
@@ -145,7 +161,18 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 # Multiplied by state.step (dt) so acceleration stays in pixels/sec²
 # regardless of physics tick rate.
 func _apply_throttle(state: PhysicsDirectBodyState2D, throttle: float, forward: Vector2) -> void:
-	state.linear_velocity += forward * throttle * acceleration * state.step
+	var forward_speed := state.linear_velocity.dot(forward)
+	var force := 0.0
+	if throttle >= 0.0:
+		_reverse_locked = false                               # brake released — reverse allowed again
+		force = throttle * acceleration                       # gas
+	elif forward_speed > 0.0:
+		_reverse_locked = true                                # this brake press began while rolling forward
+		force = throttle * acceleration * brake_factor        # braking (rolling forward)
+	elif not _reverse_locked:
+		force = throttle * acceleration * reverse_factor      # reversing (brake re-pressed at a stop)
+	# else: stopped while still holding the brake → hold still, don't reverse
+	state.linear_velocity += forward * force * state.step
 
 
 # --- Step 2: surface effects ------------------------------------------------
@@ -252,7 +279,11 @@ func _on_surface_exited(surface: Area2D) -> void:
 func _on_race_reset(spawn_transform: Transform2D) -> void:
 	_reset_to = spawn_transform
 	_reset_requested = true
+	_controls_locked = true
 
+func _on_race_started() -> void:
+	_controls_locked = false
+	
 # Lowest grip across all current surfaces, or the car's baseline if none.
 # "Most slippery wins" — a sliver of ice under a tire skids you regardless
 # of what else you're touching.

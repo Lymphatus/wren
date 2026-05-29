@@ -46,6 +46,14 @@ var _checkpoints: Array[Area2D] = []
 # 0 after a valid start-line crossing.
 var _next_required_checkpoint: int = 0
 
+## Seconds the car stays frozen after a reset before race_started fires.
+const COUNTDOWN_DURATION: float = 3.0
+
+## Time left on the post-reset freeze. >0 means counting down; the lap
+## clock is paused and the car is locked. 0 means racing. Exposed so the
+## HUD can pull it for a "3-2-1" readout later.
+var countdown_remaining: float = 3.0
+
 func _ready() -> void:
 	EventBus.race_reset.connect(_reset)
 	if start_line:
@@ -56,9 +64,23 @@ func _ready() -> void:
 			if child.has_signal("crossed"):
 				_checkpoints.append(child)
 				child.crossed.connect(_on_checkpoint_crossed)
+	_start_race.call_deferred()
+
+func _start_race() -> void:
 	EventBus.race_reset.emit(spawn_marker.global_transform)
+	countdown_remaining = COUNTDOWN_DURATION
 	
 func _process(delta: float) -> void:
+	# While counting down, hold the lap clock and fire race_started once
+	# the freeze elapses. Pressing reset again just re-sets the value above,
+	# so there's no stacking — one variable, one countdown.
+	if countdown_remaining > 0.0:
+		countdown_remaining -= delta
+		if countdown_remaining <= 0.0:
+			countdown_remaining = 0.0
+			EventBus.race_started.emit()
+		return
+
 	current_lap_time += delta
 	total_time += delta
 
@@ -97,6 +119,7 @@ func _reset(_spawn_transform: Transform2D) -> void:
 	total_time = 0.0
 	best_lap_time = -1.0
 	_next_required_checkpoint = 0
+	
 
 # ============================================================================
 # Input handling — _unhandled_input fires only when a UI element didn't
@@ -107,6 +130,7 @@ func _reset(_spawn_transform: Transform2D) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("reset"):
 		EventBus.race_reset.emit(spawn_marker.global_transform)
+		countdown_remaining = COUNTDOWN_DURATION
 		
 # ============================================================================
 # Format a duration (seconds) as "m:ss.mmm". Negative input → placeholder,
