@@ -30,9 +30,11 @@ extends CanvasLayer
 @onready var best_label: Label = $LapPanel/Lines/BestLabel
 
 @onready var countdown_timer_label: Label = $Countdown
+@onready var recap_label: Label = $Recap
 
 func _ready() -> void:
 	EventBus.race_started.connect(_on_race_started)
+	EventBus.race_ended.connect(_on_race_ended)
 
 func _process(_delta: float) -> void:
 	if not car:
@@ -49,6 +51,7 @@ func _process(_delta: float) -> void:
 		best_label.text = "Best: " + game_manager.format_time(game_manager.best_lap_time)
 		
 		if game_manager.countdown_remaining > 0:
+			recap_label.visible = false
 			countdown_timer_label.text = "%d" % ceili(game_manager.countdown_remaining)
 
 	# Skip the rest if the debug panel is hidden — no point updating
@@ -90,6 +93,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_race_started() -> void:
 	countdown_timer_label.text = "START!"
 	get_tree().create_timer(1.0).timeout.connect(_clear_countdown_label)
+
+func _on_race_ended() -> void:
+	recap_label.visible = true
 
 func _clear_countdown_label() -> void:
 	countdown_timer_label.text = ""

@@ -5,3 +5,5 @@ extends Node
 signal race_reset(spawn_transform: Transform2D)
 ## Fired when the countdown ends and the car is free to move.
 signal race_started()
+## Fired when the race ended
+signal race_ended()

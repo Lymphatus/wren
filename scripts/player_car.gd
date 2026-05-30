@@ -119,6 +119,7 @@ var _reverse_locked: bool = false
 func _ready() -> void:
 	EventBus.race_reset.connect(_on_race_reset)
 	EventBus.race_started.connect(_on_race_started)
+	EventBus.race_ended.connect(_on_race_ended)
 	# Start the smoothed grip on the baseline so the first physics tick
 	# doesn't lerp from a stale default. effective_drag stays at 0 since
 	# the asphalt baseline has no drag.
@@ -283,6 +284,9 @@ func _on_race_reset(spawn_transform: Transform2D) -> void:
 
 func _on_race_started() -> void:
 	_controls_locked = false
+	
+func _on_race_ended() -> void:
+	_controls_locked = true
 	
 # Lowest grip across all current surfaces, or the car's baseline if none.
 # "Most slippery wins" — a sliver of ice under a tire skids you regardless

@@ -20,6 +20,9 @@ var lap_count: int = 0
 ## lap). Reset to 0 on each crossing.
 var current_lap_time: float = 0.0
 
+## Max number of laps before the race ends. Set per-track in the Inspector.
+@export var total_laps: int = 1
+
 ## Total time since the beginning.
 var total_time: float = 0.0
 
@@ -54,8 +57,11 @@ const COUNTDOWN_DURATION: float = 3.0
 ## HUD can pull it for a "3-2-1" readout later.
 var countdown_remaining: float = 3.0
 
+var _race_ended: bool = false
+
 func _ready() -> void:
 	EventBus.race_reset.connect(_reset)
+	EventBus.race_ended.connect(_on_race_ended)
 	if start_line:
 		start_line.body_entered.connect(on_line_crossed)
 		
@@ -71,6 +77,9 @@ func _start_race() -> void:
 	countdown_remaining = COUNTDOWN_DURATION
 	
 func _process(delta: float) -> void:
+	if _race_ended:
+		return
+		
 	# While counting down, hold the lap clock and fire race_started once
 	# the freeze elapses. Pressing reset again just re-sets the value above,
 	# so there's no stacking — one variable, one countdown.
@@ -101,6 +110,8 @@ func on_line_crossed(_body: Node2D) -> void:
 	lap_count += 1
 	current_lap_time = 0.0
 	_next_required_checkpoint = 0
+	if lap_count >= total_laps:
+		EventBus.race_ended.emit()
 
 # ============================================================================
 # Called by each Checkpoint's `crossed` signal. Only advances the required
@@ -113,7 +124,11 @@ func _on_checkpoint_crossed(checkpoint: Area2D) -> void:
 	if idx == _next_required_checkpoint:
 		_next_required_checkpoint += 1
 
+func _on_race_ended() -> void:
+	_race_ended = true
+
 func _reset(_spawn_transform: Transform2D) -> void:
+	_race_ended = false
 	lap_count = 0
 	current_lap_time = 0.0
 	total_time = 0.0
